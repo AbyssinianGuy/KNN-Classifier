@@ -125,6 +125,7 @@ documents  = [doc1, doc2, doc3]
 for d in documents:
   tokens = word_tokenize(d)
 
+
   for w in tokens:
     stem = ps.stem(w)
     words_dict.add(stem)
