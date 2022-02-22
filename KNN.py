@@ -5,7 +5,7 @@ import string
 
 
 class KNN:
-    def __init__(self, k=4):
+    def __init__(self, k=3):
         self.k = k
         self.train_set = None
         self.validation_set = None
@@ -69,6 +69,15 @@ class KNN:
                     filtered_class_2.append(t)
 
         return filtered_class_1, filtered_class_2
+
+    def vectorize(self, corpus):
+        """
+        convert the corpus to numeric values.
+        :param corpus: the text.
+        :return: vector representation of the corpus.
+        """
+
+        pass
 
     def __calculate_distance__(self, x, y):
         """
