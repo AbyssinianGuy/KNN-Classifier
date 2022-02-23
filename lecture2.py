@@ -64,7 +64,7 @@ add_terms = np.column_stack(expansion)
 X2 = np.column_stack([X, add_terms])
 
 # SVD
-u, s, v = np.linalg.svd(X2, compute_uv=True, full_matrices = False)
+u, s, v = np.linalg.svd(X2, compute_uv=True, full_matrices=False)
 q = np.dot(u, X2.transpose())
 
 # reconstruction

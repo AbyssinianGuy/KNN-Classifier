@@ -1,12 +1,14 @@
 import string
 
-import nltk
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize, RegexpTokenizer, sent_tokenize
 
 from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer
-import pandas as pd
-import numpy as np
+from sklearn.decomposition import TruncatedSVD
+
+from matplotlib import pyplot as plt
+
+
 # nltk.download('stopwords')
 
 
@@ -26,93 +28,81 @@ def read_file(file_name, encoding="utf8"):
     return lines
 
 
+stop_words = set(stopwords.words('english'))
+punct = set(string.punctuation)  # punctuations used in english
+tokenizer = RegexpTokenizer(r"\w+")
+
+
 def parse_train_data(train_data):
     """
     splits the label from the review.
     :param train_data: list of the train_data
     :return: the filtered text.
     """
-
     class_1 = []  # positive reviews
     class_2 = []  # negative reviews
-    tokenizer = RegexpTokenizer(r"\w+")  # to avoid any non-alphabetical characters
     for i in range(len(train_data)):
         if train_data[i][:2] == "+1":
             class_1.append(train_data[i][2:])
         else:
             class_2.append(train_data[i][2:])
-
+    # list.append(" ".join(map(str, review)))
     # remove stop-words form corpus
-    stop_words = set(stopwords.words('english'))
-    punct = set(string.punctuation)  # punctuations used in english
+
     filtered_class_1 = []  # positive reviews
     filtered_class_2 = []  # negative reviews
-    sent_tkn = ()
-    sent_tkn2 = ()
+    sentence = ""
     for i in range(len(class_1)):
         tkn = tokenizer.tokenize(class_1[i])
         for t in tkn:
-            if t not in stop_words and t not in punct:
-                filtered_class_1.append(t)
+            if len(t) > 2 and t not in stop_words and t not in punct and not t.isdigit():
+                sentence += t + " "
+        filtered_class_1.append(sentence[:-1])
+        sentence = ""
         tkn = tokenizer.tokenize(class_2[i])
         for t in tkn:
-            if t not in stop_words and t not in punct:
-                filtered_class_2.append(t)
+            if len(t) > 2 and t not in stop_words and t not in punct and not t.isdigit():
+                sentence += t + " "
+        filtered_class_2.append(sentence[:-1])
 
-    return filtered_class_1, filtered_class_2
+    return filtered_class_1 + filtered_class_2
 
 
+def parse_test_data(data):
+    test_class = []
+    sentence = ""
+    for i in range(len(data)):
+        tkn = tokenizer.tokenize(data[i])
+        for t in tkn:
+            if len(t) > 2 and t not in stop_words and t not in punct and not t.isdigit():
+                sentence += t + " "
+        test_class.append(sentence[:-1])
+        sentence = ""
+
+    return test_class
+
+
+print('reading files...')
 train_data = read_file("train_data.txt")
 test_data = read_file("test_data.txt")
+print('parsing data...')
+training_data = parse_train_data(train_data)
+testing_data = parse_test_data(test_data)
+print('vectorize document...')
+tfid_vectorizer = TfidfVectorizer()
+training_vector = tfid_vectorizer.fit_transform(training_data)
+testing_vector = tfid_vectorizer.fit_transform(testing_data)
+print('calculating svd...')
 
-# print("train_data length = ",len(train_data))
-# print("test_data length = ",len(test_data))
-train_label, train_text = parse_train_data(train_data)
-# print(train_label[0].__str__())
-# print(train_text)
-concatenated_sentence = []
-concatenated_sentence2 = []
-for word, word2 in zip(train_label, train_text):
-    if word != "br":
-        if word.isalpha():
-            concatenated_sentence.append(word)
-    if word2 != "br":
-        if word2.isalpha():
-            concatenated_sentence2.append(word2)
+svd = TruncatedSVD(n_components=100)
+train_matrix = svd.fit_transform(training_vector)
+test_matrix = svd.fit_transform(testing_vector)
+# print(train_matrix.shape)
+# print("#"*100)
+# print(test_matrix)
 
-concatenated_sentence = concatenated_sentence[:-1]
-concatenated_sentence2 = concatenated_sentence2[:-1]
-# print(concatenated_sentence)
-
-def freq(corpus1, corpus2):
-    freq1 = nltk.FreqDist(corpus1)
-    freq2 = nltk.FreqDist(corpus2)
-    dic1 = dict((w, fr) for w, fr in freq1.items())
-    dic2 = dict((w, fr) for w, fr in freq2.items())
-    return dic1, dic2
-
-
-d1, d2 = freq(concatenated_sentence, concatenated_sentence2)
-# print(d1)
-label_arry = np.array(d1.keys()).astype(str)
-vector_arry = np.array(d1.values())
-
-
-print(label_arry)
-
-
-# print(d2)
-# cv = CountVectorizer()
-# with open("Test.txt", 'w+')as file:
-#     file.write(concatenated_sentence)
-# file = open("Test.txt")
-# word_count_vector = cv.fit_transform(file)
-# print(word_count_vector.shape)
-# print(word_count_vector)
-# tfidf_transformer = TfidfVectorizer()
-# train_data = tfidf_transformer.fit_transform(concatenated_sentence)
-# print(type(train_data))
-# print(train_data)
-# print(train_data)
-u, s, v = np.linalg.svd([label_arry, vector_arry], compute_uv=True, full_matrices = False)
-
+x, y = train_matrix[:][0], train_matrix[:][1]
+x2, y2 = test_matrix[:][0], test_matrix[:][1]
+plt.plot(x, y, 'o', color='black')
+plt.plot(x2, y2, 'o', color='red')
+plt.show()
