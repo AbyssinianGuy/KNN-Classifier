@@ -42,7 +42,7 @@ def train_and_validation(train_dt):
     train_dt = np.array(train_dt)
     np.random.shuffle(train_dt)  # randomize the dataset
     # 75% train - 25% validation
-    size = int(len(train_dt) * .75)
+    size = int(len(train_dt) * .9)
     return train_dt[:size], train_dt[size:]
 
 
@@ -122,21 +122,21 @@ training_data, train_ref = parse_train_data(train_split)
 validation_data, valid_ref = parse_train_data(validation_split)
 testing_data = parse_test_data(test_data)
 print('vectorize document...')
-tfid_vectorizer = TfidfVectorizer()
+tfid_vectorizer = TfidfVectorizer(norm='l2', smooth_idf=False, use_idf=True, max_features=9000)
 training_vector = tfid_vectorizer.fit_transform(training_data)
-validation_vector = tfid_vectorizer.transform(validation_data)
-testing_vector = tfid_vectorizer.transform(testing_data)
+# validation_vector = tfid_vectorizer.fit_transform(validation_data)
+testing_vector = tfid_vectorizer.fit_transform(testing_data)
 print(training_vector.shape)
-print(validation_vector.shape)
+# print(validation_vector.shape)
 print(testing_vector.shape)
 print('calculating svd...')
 
 svd = TruncatedSVD(n_components=500)
 train_matrix = svd.fit_transform(training_vector)
-validation_matrix = svd.transform(validation_vector)
-test_matrix = svd.transform(testing_vector)
+# validation_matrix = svd.fit_transform(validation_vector)
+test_matrix = svd.fit_transform(testing_vector)
 print(train_matrix.shape)
-print(validation_matrix.shape)
+# print(validation_matrix.shape)
 print(test_matrix.shape)
 # print("#"*100)
 # print(test_matrix)
@@ -153,50 +153,48 @@ print(test_matrix.shape)
 # ax2.plot(a, b, 'o', color='black')
 # ax2.plot(a2, b2, 'o', color='red')
 # plt.savefig("training-vs-test")
-k = 199
+# input("Press enter to continue to go through the test data....")
+
+k = 7
 # counter = 0
 # correct_guess = 0
 # accuracy = .00
 # for row in validation_matrix:
+#     counter += 1
 #     dist = list(euclidean_dis(train_matrix, row))  # get the distances
-#     nearest_neighbors = sorted(dist)[:k]  # splice only k amount
-#     nearest_indices = []
-#     for neighbors in nearest_neighbors:
-#         nearest_indices.append(dist.index(neighbors))  # index of 50 closest neighbors
-#     neighbors_score = []
-#     for index in nearest_indices:
-#         neighbors_score.append(train_ref[index])
+#     row = np.array(row)
+#     nearest_neighbors = np.argpartition(-row, k)[:k]  # splice only k amount
+#     neighbors_score = [train_ref[index] for index in nearest_neighbors]
 #     pos_rev = neighbors_score.count("+1")
 #     neg_rev = neighbors_score.count("-1")
 #     if pos_rev > neg_rev:
-#         if valid_ref[counter] == "+1":
+#         if valid_ref[counter-1] == "+1":
 #             correct_guess += 1
-#             accuracy = correct_guess / len(validation_matrix)
+#             accuracy = correct_guess / counter
 #     else:
-#         if valid_ref[counter] == "-1":
+#         if valid_ref[counter-1] == "-1":
 #             correct_guess += 1
-#             accuracy = correct_guess / len(validation_matrix)
+#             accuracy = correct_guess / counter
 #         # print(valid_ref[counter], "\t", "-1")
-#     sys.stdout.write("\rTraining time: {:.2f} seconds\t training accuracy: {:.2f}%".
-#                      format(time.process_time() - start, accuracy * 100.00))
+#     sys.stdout.write("\rTraining time: {:.2f} seconds\t training accuracy: {:.2f}%\t data points processed: {}/1500".
+#                      format(time.process_time() - start, accuracy * 100.00, counter))
 #     sys.stdout.flush()
-#     counter += 1
+# sys.stdout.write("\n")
 # sys.stdout.flush()
 # print("positive reviews: ", pos_rev)
 # print("negative reviews", neg_rev)
+# input("Press enter to continue to go through the test data....")
+# Prediction starts here...
 accuracy = .00
 counter = 0
 guess = []
 dist = []
 for row in test_matrix:
+    counter += 1
     dist = list(euclidean_dis(train_matrix, row))
-    nearest_neighbors = sorted(dist)[:k]
-    nearest_indices = []
-    for neighbors in nearest_neighbors:
-        nearest_indices.append(dist.index(neighbors))
-    neighbors_score = []
-    for index in nearest_indices:
-        neighbors_score.append(train_ref)
+    row = np.array(row)
+    nearest_neighbors = np.argpartition(-row, k)[:k]  # splice only k amount
+    neighbors_score = [train_ref[index] for index in nearest_neighbors]
     pos_rev = neighbors_score.count("+1")
     neg_rev = neighbors_score.count("-1")
     if pos_rev > neg_rev:
@@ -204,9 +202,9 @@ for row in test_matrix:
     else:
         guess.append("-1")
     sys.stdout.write("\rTesting Time: {:.2f} seconds\t data points processed: {}/15000".
-                     format(time.process_time()-start, counter))
+                     format(time.process_time() - start, counter))
     sys.stdout.flush()
-    counter += 1
-with open("format.txt", "w", encoding='utf8') as file:
+
+with open("Solution.txt", "w", encoding='utf8') as file:
     for score in guess:
-        file.write(score+"\n")
+        file.write(score + "\n")
