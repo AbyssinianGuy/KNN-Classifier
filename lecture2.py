@@ -10,7 +10,7 @@ Original file is located at
 import nltk
 import numpy as np
 import matplotlib.pyplot as plt
-nltk.download('punkt')
+# nltk.download('punkt')
 
 from nltk.tokenize import word_tokenize, wordpunct_tokenize
 from nltk.stem import PorterStemmer
@@ -51,7 +51,6 @@ X_{1}^{3}, X_{2}^{3}$
 n = 1000
 d = 2
 X = np.random.normal(size=(n, d))
-
 # add quadratic term
 expansion = []
 for i in range(X.shape[1]):
@@ -59,10 +58,9 @@ for i in range(X.shape[1]):
           expansion.append(X[:, i] + X[:, j])
           expansion.append(X[:, i] * X[:, j])
           expansion.append((X[:, i] + X[:, j])**3)
-
 add_terms = np.column_stack(expansion)
 X2 = np.column_stack([X, add_terms])
-
+print(X2.shape)
 # SVD
 u, s, v = np.linalg.svd(X2, compute_uv=True, full_matrices=False)
 q = np.dot(u, X2.transpose())
